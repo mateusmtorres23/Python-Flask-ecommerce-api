@@ -1,14 +1,24 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
+from flask_login import UserMixin, LoginManager, login_user, login_required, logout_user
 from flask_migrate import Migrate
+from dotenv import load_dotenv
+import os
+
+load_dotenv(".env")
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.secret_key = os.getenv("SECRET_KEY")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DB_URI")
 
 db = SQLAlchemy(app)
 
 migrate = Migrate(app, db)
+
+login_manager = LoginManager(app)
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -20,6 +30,33 @@ class Product(db.Model):
     name = db.Column(db.String(100), nullable=False)
     price_in_cents = db.Column(db.Integer, nullable=False) # R$ 1.00 = 100
     description = db.Column(db.Text, nullable=True)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+    if "username" in data and "password" in data:
+        user = User.query.filter_by(username=data["username"]).first()
+
+        if user and user.password == data["password"]:
+            login_user(user)
+            return jsonify({"message": "Logged in successfully"}), 200
+
+        return jsonify({"error": "Invalid username or password"}), 401
+
+    return jsonify({"error": "Invalid login data"}), 400
+
+
+@app.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"message": "Logout successfully"})
 
 
 @app.route("/api/products", methods=["GET"])
@@ -49,6 +86,7 @@ def get_product_details(product_id):
 
 
 @app.route("/api/products/add", methods=["POST"])
+@login_required
 def add_product():
     data = request.json
     if "name" in data and "price_in_cents" in data:
@@ -66,6 +104,7 @@ def add_product():
 
 
 @app.route("/api/products/delete/<int:product_id>", methods=["DELETE"])
+@login_required
 def delete_product(product_id):
     product = Product.query.get(product_id)
     if product:
@@ -76,6 +115,7 @@ def delete_product(product_id):
 
 
 @app.route("/api/products/update/<int:product_id>", methods=["PUT"])
+@login_required
 def update_product(product_id):
     data = request.json
 
