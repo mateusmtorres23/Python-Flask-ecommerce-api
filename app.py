@@ -5,6 +5,8 @@ from flask_migrate import Migrate
 from dotenv import load_dotenv
 import os
 
+from sqlalchemy.orm import backref
+
 load_dotenv(".env")
 
 app = Flask(__name__)
@@ -24,12 +26,18 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
+    cart = db.relationship('CartItem', backref='user', lazy=True)
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     price_in_cents = db.Column(db.Integer, nullable=False) # R$ 1.00 = 100
     description = db.Column(db.Text, nullable=True)
+
+class CartItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
 
 
 @login_manager.user_loader
