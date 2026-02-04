@@ -20,6 +20,10 @@ class UserAlreadyExists(ApiError):
     status_code = 409
     message = "A user with this username already exists"
 
+class ProductAlreadyAdded(ApiError):
+    status_code = 409
+    message = "This product is already in the cart"
+
 class BadRequest(ApiError):
     status_code = 400
     message = "Bad request"
