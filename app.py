@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin, LoginManager, login_user, login_required, logout_user
+from flask_login import UserMixin, LoginManager, login_user, login_required, logout_user, current_user
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 import os
 
-from sqlalchemy.orm import backref
+from sqlalchemy.orm import backref, relationship
+
 
 load_dotenv(".env")
 
@@ -38,6 +39,7 @@ class CartItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    product = db.relationship('Product', backref='cart_items', lazy="joined")
 
 
 @login_manager.user_loader
@@ -140,6 +142,56 @@ def update_product(product_id):
         return jsonify({"error": "Product not found"}), 404
 
     return jsonify({"error": "Invalid Product data"}), 400
+
+
+@app.route("/api/cart", methods=["GET"])
+@login_required
+def read_cart():
+    user_cart =  current_user.cart
+
+    return jsonify([{
+        "id": item.product.id,
+        "name": item.product.name,
+        "price": f'{item.product.price_in_cents/100:.2f}',
+        "description": item.product.description
+    } for item in user_cart])
+
+
+@app.route("/api/cart/add/<int:product_id>", methods=["POST"])
+@login_required
+def add_to_cart(product_id):
+    product = Product.query.get(product_id)
+    
+    if product:
+        user_id = current_user.id
+        user_cart = current_user.cart
+
+        if CartItem.query.filter_by(user_id=user_id, product_id=product.id).first():
+            return jsonify({"error": "Product already in the user's cart"}), 409
+
+        user_cart.append(CartItem(user_id=user_id, product_id=product.id))
+
+        db.session.commit()
+
+        return jsonify({"message": "Product added to cart successfully"}), 200
+    
+    return jsonify({"error": "Product not found"}), 404
+
+
+@app.route("/api/cart/remove/<int:product_id>", methods=["DELETE"])
+@login_required
+def remove_from_cart(product_id):
+    user_id = current_user.id
+
+    cart_item = CartItem.query.filter_by(user_id=user_id, product_id=product_id).first()
+
+    if cart_item:
+        db.session.delete(cart_item)
+        db.session.commit()
+
+        return jsonify({"message": "Product removed from cart successfully"}), 200 
+
+    return jsonify({"error": "Product not found"}), 404
 
 
 if __name__ == '__main__':
