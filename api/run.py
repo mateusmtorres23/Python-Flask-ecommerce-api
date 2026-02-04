@@ -1,46 +1,14 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin, LoginManager, login_user, login_required, logout_user, current_user
-from flask_migrate import Migrate
+from flask_login import login_user, login_required, logout_user, current_user
 from dotenv import load_dotenv
+from app.routes import auth_controller, cart_controller, product_controller
 import os
-
-from sqlalchemy.orm import backref, relationship
-
 
 load_dotenv(".env")
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DB_URI")
-
-db = SQLAlchemy(app)
-
-migrate = Migrate(app, db)
-
-login_manager = LoginManager(app)
-login_manager.init_app(app)
-login_manager.login_view = "login"
-
-
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable=False, unique=True)
-    password = db.Column(db.String(100), nullable=False)
-    cart = db.relationship('CartItem', backref='user', lazy=True)
-
-class Product(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    price_in_cents = db.Column(db.Integer, nullable=False) # R$ 1.00 = 100
-    description = db.Column(db.Text, nullable=True)
-
-class CartItem(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
-    product = db.relationship('Product', backref='cart_items', lazy="joined")
-
 
 @login_manager.user_loader
 def load_user(user_id):
