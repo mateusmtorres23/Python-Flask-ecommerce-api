@@ -194,5 +194,15 @@ def remove_from_cart(product_id):
     return jsonify({"error": "Product not found"}), 404
 
 
+@app.route("/api/cart/checkout", methods=["POST"])
+@login_required
+def checkout():
+    user_cart = current_user.cart
+
+    for item in user_cart:
+        db.session.delete(item)
+        db.session.commit()
+    return jsonify({"message":"Checkout successfull"})
+
 if __name__ == '__main__':
     app.run(debug=True)
