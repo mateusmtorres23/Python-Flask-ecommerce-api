@@ -28,3 +28,6 @@ class InvalidUsernamePassword(ApiError):
     status_code = 401
     message = "Invalid username or password"
 
+class ProductNotFound(ApiError):
+    status_code = 404
+    message = "This product doesn't exist"
