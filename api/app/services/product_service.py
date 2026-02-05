@@ -1,7 +1,6 @@
-from extensions import db
-
-from models.product import Product
-from exceptions import BadRequest, ProductNotFound
+from app.extensions import db
+from app.models.product import Product
+from app.exceptions import BadRequest, ProductNotFound
 
 class ProductService():
     
@@ -25,7 +24,7 @@ class ProductService():
             new_product = Product(
                 name=request["name"],
                 price_in_cents=request["price_in_cents"],
-                description=request["description"]
+                description=request.get("description")
             )
 
             db.session.add(new_product)

@@ -1,8 +1,8 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from exceptions import BadRequest, UserAlreadyExists, InvalidUsernamePassword
-from extensions import db
-from models.user import User
+from app.exceptions import BadRequest, UserAlreadyExists, InvalidUsernamePassword
+from app.extensions import db
+from app.models.user import User
 
 class AuthService:
     

@@ -1,25 +1,16 @@
 from flask_login import current_user, login_required
 
-from models.cart_item import CartItem
-from models.product import Product
-from exceptions import ProductAlreadyAdded, ProductNotFound
-from extensions import db
+from app.models.cart_item import CartItem
+from app.models.product import Product
+from app.exceptions import ProductAlreadyAdded, ProductNotFound
+from app.extensions import db
 
 class CartService():
     
     @staticmethod
-    @login_required
     def read_cart():
         user_cart = current_user.cart
-
-        cart_itens = [{
-                "id": item.product.id,
-                "name": item.product.name,
-                "price": f'R$ {item.product.price_in_cents/100:.2f}',
-                "description": item.product.description
-            } for item in user_cart]
-        
-        return cart_itens
+        return user_cart
 
     @staticmethod
     def add_to_cart(product_id):
@@ -35,6 +26,8 @@ class CartService():
             user_cart.append(CartItem(user_id=user_id, product_id=product.id))
 
             db.session.commit()
+
+            return
         
         raise ProductNotFound()
     
@@ -57,5 +50,6 @@ class CartService():
 
         for item in user_cart:
             db.session.delete(item)
-            db.session.commit()
+        
+        db.session.commit()
         return

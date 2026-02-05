@@ -1,11 +1,11 @@
 from flask import Blueprint, jsonify, request
 from flask_login import login_required
 
-from services.product_service import ProductService
+from app.services.product_service import ProductService
 
 product_bp = Blueprint("product", __name__)
 
-@product_bp.route("/", methods=["GET"])
+@product_bp.route("", methods=["GET"])
 def read_products_route():
     products = ProductService.read_products_service()
 
